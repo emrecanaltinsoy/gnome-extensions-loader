@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
 )
 
 from app_ui import Ui_MainWindow
-from src.download_extension import download_extension
+from utils.download_extension import download_extension
 
 LAYOUT_DIR = "/home/emrecan/.config/layouts"
 
@@ -56,8 +56,10 @@ class Window(QMainWindow, Ui_MainWindow):
             if verify_installation == QMessageBox.Ok:
                 disabled = self.disable_extensions()
                 enabled = self.enable_extensions()
-                bash_command(["./src/load_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"])
-                bash_command(["./src/restart_shell.sh"])
+                bash_command(
+                    ["./utils/load_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
+                )
+                bash_command(["./utils/restart_shell.sh"])
 
                 message = self.enabled_disabled_message(enabled, disabled)
                 show_message(
@@ -74,7 +76,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if text:
                 if not os.path.isfile(f"{LAYOUT_DIR}/{str(text)}.conf"):
                     self.listWidget.addItem(str(text))
-                    bash_command(["./src/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
+                    bash_command(["./utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
                 else:
                     show_message(
                         message="Layout name exists!", title=None, style="warning"
@@ -99,7 +101,9 @@ class Window(QMainWindow, Ui_MainWindow):
         )
         if answer == QMessageBox.Ok:
             for item in listItems:
-                bash_command(["./src/dump_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"])
+                bash_command(
+                    ["./utils/dump_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
+                )
                 show_message(
                     message="Layout overwritten successfully.",
                     title="Overwrite Layout",
@@ -135,7 +139,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     )
                     if check_download:
                         bash_command(
-                            ["./src/install_extension.sh", f"{uuid}", f"{LAYOUT_DIR}"]
+                            ["./utils/install_extension.sh", f"{uuid}", f"{LAYOUT_DIR}"]
                         )
                         installation_success.append(uuid.split("@")[0])
                     else:
