@@ -1,16 +1,19 @@
+from os.path import exists as file_exists
+
 import requests
 
 
 def download_extension(layout_dir, extension_uuid, shell_version):
     try:
-        download_url = get_download_link(extension_uuid, shell_version)
+        if not file_exists(f"{layout_dir}/extensions/{extension_uuid}"):
+            download_url = get_download_link(extension_uuid, shell_version)
 
-        r = requests.get(download_url, allow_redirects=True)
+            r = requests.get(download_url, allow_redirects=True)
 
-        with open(f"{layout_dir}/extensions/{extension_uuid}", "wb") as f:
-            f.write(r.content)
+            with open(f"{layout_dir}/extensions/{extension_uuid}", "wb") as f:
+                f.write(r.content)
 
-        # print(f"{extension_uuid} downloaded")
+            # print(f"{extension_uuid} downloaded")
         return True
 
     except IndexError:

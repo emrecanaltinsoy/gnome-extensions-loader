@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
 )
 
-from app_ui import Ui_MainWindow
+from ui.app_ui import Ui_MainWindow
 from utils.download_extension import download_extension
 
 LAYOUT_DIR = "/home/emrecan/.config/layouts"
@@ -31,7 +31,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.config = configparser.ConfigParser()
         self.shell_version = get_shell_version()
-        self.extensions_to_enable = None
 
     def connectSignalsSlots(self):
         self.action_Add.triggered.connect(self.add_layout)
@@ -50,23 +49,44 @@ class Window(QMainWindow, Ui_MainWindow):
                 style="warning",
             )
             return
+
         for item in listItems:
             self.config.read(f"{LAYOUT_DIR}/{item.text()}.conf")
-            verify_installation = self.install_missing_extensions()
+
+            (
+                extensions_to_enable,
+                extensions_to_disable,
+                missing_extensions,
+            ) = self.check_extensions()
+
+            verify_installation = self.pre_installation_message(
+                extensions_to_enable, extensions_to_disable, missing_extensions
+            )
+
             if verify_installation == QMessageBox.Ok:
-                disabled = self.disable_extensions()
-                enabled = self.enable_extensions()
+                (
+                    installation_success,
+                    installation_fail,
+                ) = self.install_missing_extensions(missing_extensions)
                 bash_command(
                     ["./utils/load_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
                 )
-                bash_command(["./utils/restart_shell.sh"])
 
-                message = self.enabled_disabled_message(enabled, disabled)
-                show_message(
-                    message=message,
-                    title="Enabled/Disabled Extensions",
-                    style="information",
+                post_installation_message = self.post_installation_message(
+                    installation_success,
+                    installation_fail,
+                    extensions_to_enable,
+                    extensions_to_disable,
                 )
+
+                if post_installation_message:
+                    show_message(
+                        message=f"{post_installation_message}",
+                        title="Extension Installation",
+                        style="information",
+                    )
+
+                # bash_command(["./utils/restart_shell.sh"])
 
     def add_layout(self):
         text, ok = QInputDialog.getText(
@@ -110,113 +130,118 @@ class Window(QMainWindow, Ui_MainWindow):
                     style="information",
                 )
 
-    def install_missing_extensions(self):
-        self.extensions_to_enable = ast.literal_eval(
-            self.config.get("/", "enabled-extensions")
-        )
-        missing_extensions = set(self.extensions_to_enable).difference(
-            set(all_extensions())
-        )
+    def install_missing_extensions(self, missing_extensions):
+        installation_fail = set()
+        installation_success = set()
 
+        for uuid in missing_extensions:
+            check_download = download_extension(LAYOUT_DIR, uuid, self.shell_version)
+            if check_download:
+                bash_command(
+                    ["./utils/install_extension.sh", f"{uuid}", f"{LAYOUT_DIR}"]
+                )
+                installation_success.add(uuid)
+            else:
+                installation_fail.add(uuid)
+
+        return installation_success, installation_fail
+
+    def pre_installation_message(
+        self, extensions_to_enable, extensions_to_disable, missing_extensions
+    ):
+        # print("MISSING\n", missing_extensions)
+        # print("ENABLE\n", extensions_to_enable)
+        # print("DISABLE\n", extensions_to_disable)
+        message = ""
         if missing_extensions:
-            verify_message = "Following extensions will be installed."
+            message += "Extensions to Install:"
             for uuid in missing_extensions:
-                verify_message += f"\n- {uuid.split('@')[0]}"
+                if uuid:
+                    message += f"\n- {uuid.split('@')[0]}"
 
-            verify_installation = show_message(
-                message=f"{verify_message}",
+            if extensions_to_enable or extensions_to_disable:
+                message += "\n\n"
+
+        if extensions_to_enable:
+            message += "Extensions to Enable:"
+            for uuid in extensions_to_enable:
+                if uuid:
+                    message += f"\n- {uuid.split('@')[0]}"
+
+            if extensions_to_disable:
+                message += "\n\n"
+
+        if extensions_to_disable:
+            message += "Extensions to Disable:"
+            for uuid in extensions_to_disable:
+                if uuid:
+                    message += f"\n- {uuid.split('@')[0]}"
+
+        if message:
+            return show_message(
+                message=f"{message}",
                 title="Extensions",
                 style="question",
             )
-
-            installation_fail = []
-            installation_success = []
-
-            if verify_installation == QMessageBox.Ok:
-                for uuid in missing_extensions:
-                    check_download = download_extension(
-                        LAYOUT_DIR, uuid, self.shell_version
-                    )
-                    if check_download:
-                        bash_command(
-                            ["./utils/install_extension.sh", f"{uuid}", f"{LAYOUT_DIR}"]
-                        )
-                        installation_success.append(uuid.split("@")[0])
-                    else:
-                        installation_fail.append(uuid.split("@")[0])
-
-                post_installation_message = self.installation_message(
-                    installation_success, installation_fail
-                )
-
-                show_message(
-                    message=f"{post_installation_message}",
-                    title="Extension Installation",
-                    style="information",
-                )
-
-            return verify_installation
-
         return QMessageBox.Ok
 
-    def installation_message(self, installation_success, installation_fail):
+    def post_installation_message(
+        self,
+        installation_success,
+        installation_fail,
+        extensions_to_enable,
+        extensions_to_disable,
+    ):
         post_installation_message = ""
         if installation_success:
             post_installation_message += "Installed:"
             for uuid in installation_success:
-                post_installation_message += f"\n- {uuid}"
-            post_installation_message += "\n\n"
-            print("INSTALLED\n", installation_success)
+                post_installation_message += f"\n- {uuid.split('@')[0]}"
+            if installation_fail or extensions_to_enable or extensions_to_disable:
+                post_installation_message += "\n\n"
+            # print("INSTALLED\n", installation_success)
 
         if installation_fail:
-            post_installation_message += "Failed:"
+            post_installation_message += "Failed to Install:"
             for uuid in installation_fail:
-                post_installation_message += f"\n- {uuid}"
-            print("FAILED TO INSTALL\n", installation_fail)
+                post_installation_message += f"\n- {uuid.split('@')[0]}"
+            if extensions_to_enable or extensions_to_disable:
+                post_installation_message += "\n\n"
+            # print("FAILED TO INSTALL\n", installation_fail)
+
+        extensions_to_enable = extensions_to_enable.difference(installation_fail)
+        if extensions_to_enable:
+            post_installation_message += "Enabled:"
+            for uuid in extensions_to_enable:
+                post_installation_message += f"\n- {uuid.split('@')[0]}"
+            if extensions_to_disable:
+                post_installation_message += "\n\n"
+            # print("ENABLED\n", extensions_to_enable)
+
+        if extensions_to_disable:
+            post_installation_message += "Disabled:"
+            for uuid in extensions_to_disable:
+                post_installation_message += f"\n- {uuid.split('@')[0]}"
+            # print("DISABLED\n", extensions_to_disable)
 
         return post_installation_message
 
-    def enabled_disabled_message(self, enabled, disabled):
-        message = ""
-        if enabled:
-            message += "Enabled:"
-            for uuid in enabled:
-                message += f"\n- {uuid}"
-            print("ENABLED\n", enabled)
-        if enabled and disabled:
-            message += "\n\n"
-        if disabled:
-            message += "Disabled:"
-            for uuid in disabled:
-                message += f"\n- {uuid}"
-            print("DISABLED\n", disabled)
-
-        return message
-
-    def disable_extensions(self):
-        extensions_to_disable = set(enabled_extensions()).difference(
-            set(self.extensions_to_enable)
+    def check_extensions(self):
+        to_be_enabled = set(
+            ast.literal_eval(self.config.get("/", "enabled-extensions"))
         )
-        disabled = []
-        for e in extensions_to_disable:
-            if e:
-                bash_command(["gnome-extensions", "disable", f"{e}"])
-                disabled.append(e)
-        if disabled:
-            return disabled
-        return None
+        currently_enabled = set(enabled_extensions())
+        installed_extensions = set(all_extensions())
 
-    def enable_extensions(self):
-        enabled = []
-        for e in set(disabled_extensions()).intersection(
-            set(self.extensions_to_enable)
-        ):
-            if e:
-                bash_command(["gnome-extensions", "enable", f"{e}"])
-                enabled.append(e)
-        if enabled:
-            return enabled
-        return None
+        to_be_enabled.discard("")
+        currently_enabled.discard("")
+        installed_extensions.discard("")
+
+        missing_extensions = to_be_enabled.difference(installed_extensions)
+        extensions_to_enable = to_be_enabled.difference(currently_enabled)
+        extensions_to_disable = currently_enabled.difference(to_be_enabled)
+
+        return extensions_to_enable, extensions_to_disable, missing_extensions
 
     def remove_layout(self):
         listItems = self.listWidget.selectedItems()
