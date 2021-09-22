@@ -27,8 +27,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.setFixedSize(250, 300)
         self.connectSignalsSlots()
-        os.makedirs(f"{LAYOUT_DIR}", exist_ok=True)
-        os.makedirs(f"{LAYOUT_DIR}/extensions", exist_ok=True)
         self.view_conf_files()
 
         self.config = configparser.ConfigParser()
@@ -58,7 +56,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if verify_installation == QMessageBox.Ok:
                 disabled = self.disable_extensions()
                 enabled = self.enable_extensions()
-                bash_command(["./src/load_conf.sh", f"{item.text()}"])
+                bash_command(["./src/load_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"])
                 bash_command(["./src/restart_shell.sh"])
 
                 message = self.enabled_disabled_message(enabled, disabled)
@@ -76,7 +74,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if text:
                 if not os.path.isfile(f"{LAYOUT_DIR}/{str(text)}.conf"):
                     self.listWidget.addItem(str(text))
-                    bash_command(["./src/dump_conf.sh", f"{text}"])
+                    bash_command(["./src/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
                 else:
                     show_message(
                         message="Layout name exists!", title=None, style="warning"
@@ -101,7 +99,7 @@ class Window(QMainWindow, Ui_MainWindow):
         )
         if answer == QMessageBox.Ok:
             for item in listItems:
-                bash_command(["./src/dump_conf.sh", f"{item.text()}"])
+                bash_command(["./src/dump_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"])
                 show_message(
                     message="Layout overwritten successfully.",
                     title="Overwrite Layout",
@@ -136,7 +134,9 @@ class Window(QMainWindow, Ui_MainWindow):
                         LAYOUT_DIR, uuid, self.shell_version
                     )
                     if check_download:
-                        bash_command(["./src/install_extension.sh", f"{uuid}"])
+                        bash_command(
+                            ["./src/install_extension.sh", f"{uuid}", f"{LAYOUT_DIR}"]
+                        )
                         installation_success.append(uuid.split("@")[0])
                     else:
                         installation_fail.append(uuid.split("@")[0])
@@ -296,6 +296,8 @@ def show_message(message=None, title=None, style=None):
 
 
 if __name__ == "__main__":
+    os.makedirs(f"{LAYOUT_DIR}", exist_ok=True)
+    os.makedirs(f"{LAYOUT_DIR}/extensions", exist_ok=True)
     app = QApplication(sys.argv)
     win = Window()
     win.show()
