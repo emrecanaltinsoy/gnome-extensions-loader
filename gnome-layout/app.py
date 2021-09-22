@@ -31,6 +31,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.config = configparser.ConfigParser()
         self.shell_version = get_shell_version()
+        self.session = get_session_type()
 
     def connectSignalsSlots(self):
         self.action_Add.triggered.connect(self.add_layout)
@@ -82,11 +83,17 @@ class Window(QMainWindow, Ui_MainWindow):
                 if post_installation_message:
                     show_message(
                         message=f"{post_installation_message}",
-                        title="Extension Installation",
+                        title="Applied Changes",
                         style="information",
                     )
-
-                # bash_command(["./utils/restart_shell.sh"])
+                if re.search("wayland", self.session):
+                    show_message(
+                        message="You may need to log out for the changes to take effect.",
+                        title="Log out",
+                        style="information",
+                    )
+                else:
+                    bash_command(["./utils/restart_shell.sh"])
 
     def add_layout(self):
         text, ok = QInputDialog.getText(
@@ -99,11 +106,15 @@ class Window(QMainWindow, Ui_MainWindow):
                     bash_command(["./utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
                 else:
                     show_message(
-                        message="Layout name exists!", title=None, style="warning"
+                        message="Layout name exists!",
+                        title="Existing Name",
+                        style="warning",
                     )
             else:
                 show_message(
-                    message="Layout name is missing!", title=None, style="warning"
+                    message="Layout name is missing!",
+                    title="Missing Name",
+                    style="warning",
                 )
 
     def overwrite_layout(self):
@@ -292,6 +303,11 @@ def get_shell_version():
     shell = bash_command(["gnome-shell", "--version"])
     shell = re.sub("[^0-9.]", "", shell).split(".")
     return ".".join(shell[0:2])
+
+
+def get_session_type():
+    session = bash_command(["./utils/get_session.sh"])
+    return session
 
 
 def show_about():
