@@ -86,14 +86,21 @@ class Window(QMainWindow, Ui_MainWindow):
                         title="Applied Changes",
                         style="information",
                     )
-                if re.search("wayland", self.session):
-                    show_message(
-                        message="You may need to log out for the changes to take effect.",
-                        title="Log out",
-                        style="information",
-                    )
-                else:
-                    bash_command(["./utils/restart_shell.sh"])
+                if installation_success:
+                    if re.search("wayland", self.session):
+                        show_message(
+                            message="You may need to log out for the changes to take effect.",
+                            title="Log out",
+                            style="information",
+                        )
+                    else:
+                        answer = show_message(
+                            message="Would you like to restart gnome shell?",
+                            title="Restart Shell",
+                            style="question",
+                        )
+                        if answer == QMessageBox.Ok:
+                            bash_command(["./utils/restart_shell.sh"])
 
     def add_layout(self):
         text, ok = QInputDialog.getText(
@@ -292,10 +299,10 @@ def disabled_extensions():
 
 
 def bash_command(bashCmd):
-    process = subprocess.Popen(bashCmd, stdout=subprocess.PIPE)
-    output, error = process.communicate()
-    if not error:
-        return output.decode("utf-8")
+    with subprocess.Popen(bashCmd, stdout=subprocess.PIPE) as process:
+        output, error = process.communicate()
+        if not error:
+            return output.decode("utf-8")
     return None
 
 
