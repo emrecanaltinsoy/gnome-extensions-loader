@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
 from ui.UI import Ui_MainWindow
 from utils.download_extension import download_extension
 
-LAYOUT_DIR = "/home/emrecan/.config/gnome-extensions-loader"
+LAYOUT_DIR = "XDG_CONFIG_HOME/gnome-extensions-loader"
 SETUP_DIR="/usr/share/gnome-extensions-loader"
 
 
