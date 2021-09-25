@@ -18,9 +18,6 @@ from PyQt5.QtWidgets import (
 from ui.UI import Ui_MainWindow
 from utils.download_extension import download_extension
 
-LAYOUT_DIR = ".config/gnome-extensions-loader"
-SETUP_DIR = "/usr/share/gnome-extensions-loader"
-
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -118,6 +115,12 @@ class Window(QMainWindow, Ui_MainWindow):
                     bash_command(
                         [f"{SETUP_DIR}/utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"]
                     )
+                    self.config.read(f"{LAYOUT_DIR}/{str(text)}.conf")
+                    self.config.set(
+                        "/", "enabled-extensions", str(enabled_extensions())
+                    )
+                    with open(f"{LAYOUT_DIR}/{str(text)}.conf", "w") as configfile:
+                        self.config.write(configfile)
                 else:
                     show_message(
                         message="Layout name exists!",
@@ -332,6 +335,11 @@ def get_session_type():
     return session
 
 
+def get_home():
+    home_dir = bash_command(["whoami"])
+    return f"/home/{home_dir[:-1]}"
+
+
 def show_about():
     show_message(
         message="<p>Gnome extensions loader:</p>"
@@ -361,14 +369,12 @@ def show_message(message=None, title=None, style=None):
     return msgBox.exec()
 
 
-def main():
+if __name__ == "__main__":
+    LAYOUT_DIR = f"{get_home()}/.config/gnome-extensions-loader"
+    SETUP_DIR = "/usr/share/gnome-extensions-loader"
     os.makedirs(f"{LAYOUT_DIR}", exist_ok=True)
     os.makedirs(f"{LAYOUT_DIR}/extensions", exist_ok=True)
     app = QApplication(sys.argv)
     win = Window()
     win.show()
     sys.exit(app.exec())
-
-
-if __name__ == "__main__":
-    main()
