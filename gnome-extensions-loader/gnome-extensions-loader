@@ -155,9 +155,12 @@ class Window(QMainWindow, Ui_MainWindow):
                 )
 
     def write_conf(self, text):
-        bash_command([f"{SETUP_DIR}/utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
-        self.config.read(f"{LAYOUT_DIR}/{str(text)}.conf")
-        self.config.set("/", "enabled-extensions", str(enabled_extensions()))
+        enabled = str(enabled_extensions())
+        disabled = str(disabled_extensions())
+        self.config.read_string(bash_command("dconf dump /org/gnome/shell/".split()))
+        self.config.set("/", "enabled-extensions", enabled)
+        self.config.set("/", "disabled-extensions", disabled)
+
         with open(f"{LAYOUT_DIR}/{str(text)}.conf", "w") as configfile:
             self.config.write(configfile)
 
@@ -304,15 +307,25 @@ class Window(QMainWindow, Ui_MainWindow):
 
 
 def all_extensions():
-    return bash_command(["gnome-extensions", "list"]).split("\n")
+    return [
+        ext for ext in bash_command(["gnome-extensions", "list"]).split("\n") if ext
+    ]
 
 
 def enabled_extensions():
-    return bash_command(["gnome-extensions", "list", "--enabled"]).split("\n")
+    return [
+        ext
+        for ext in bash_command(["gnome-extensions", "list", "--enabled"]).split("\n")
+        if ext
+    ]
 
 
 def disabled_extensions():
-    return bash_command(["gnome-extensions", "list", "--disabled"]).split("\n")
+    return [
+        ext
+        for ext in bash_command(["gnome-extensions", "list", "--disabled"]).split("\n")
+        if ext
+    ]
 
 
 def bash_command(bashCmd):
