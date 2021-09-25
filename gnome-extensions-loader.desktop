@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Gnome Extensions Loader
+Comment=Save and load gnome shell extensions templates
+Keywords=extensions;gnome;
+Exec=gnome-extensions-loader
+Icon=/usr/share/gnome-extensions-loader/ui/icons/gnome-extensions-loader.png
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=GNOME;GTK;Utility;Extensions;

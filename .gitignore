@@ -2,3 +2,4 @@
 __pycache__
 gnome-layout/ui/*.ui
 settings
+*.ui

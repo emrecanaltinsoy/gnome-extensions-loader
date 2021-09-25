@@ -15,10 +15,11 @@ from PyQt5.QtWidgets import (
     QMessageBox,
 )
 
-from ui.app_ui import Ui_MainWindow
+from ui.UI import Ui_MainWindow
 from utils.download_extension import download_extension
 
-LAYOUT_DIR = "/home/emrecan/.config/layouts"
+LAYOUT_DIR = "/home/emrecan/.config/gnome-extensions-loader"
+SETUP_DIR="/usr/share/gnome-extensions-loader"
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -70,7 +71,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     installation_fail,
                 ) = self.install_missing_extensions(missing_extensions)
                 bash_command(
-                    ["./utils/load_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
+                    [f"{SETUP_DIR}/utils/load_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
                 )
 
                 post_installation_message = self.post_installation_message(
@@ -100,7 +101,7 @@ class Window(QMainWindow, Ui_MainWindow):
                             style="question",
                         )
                         if answer == QMessageBox.Ok:
-                            bash_command(["./utils/restart_shell.sh"])
+                            bash_command([f"{SETUP_DIR}/utils/restart_shell.sh"])
 
     def add_layout(self):
         text, ok = QInputDialog.getText(
@@ -110,7 +111,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if text:
                 if not os.path.isfile(f"{LAYOUT_DIR}/{str(text)}.conf"):
                     self.listWidget.addItem(str(text))
-                    bash_command(["./utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
+                    bash_command([f"{SETUP_DIR}/utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
                 else:
                     show_message(
                         message="Layout name exists!",
@@ -140,7 +141,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if answer == QMessageBox.Ok:
             for item in listItems:
                 bash_command(
-                    ["./utils/dump_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
+                    [f"{SETUP_DIR}/utils/dump_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
                 )
                 show_message(
                     message="Layout overwritten successfully.",
@@ -156,7 +157,7 @@ class Window(QMainWindow, Ui_MainWindow):
             check_download = download_extension(LAYOUT_DIR, uuid, self.shell_version)
             if check_download:
                 bash_command(
-                    ["./utils/install_extension.sh", f"{uuid}", f"{LAYOUT_DIR}"]
+                    [f"{SETUP_DIR}/utils/install_extension.sh", f"{uuid}", f"{LAYOUT_DIR}"]
                 )
                 installation_success.add(uuid)
             else:
@@ -313,16 +314,15 @@ def get_shell_version():
 
 
 def get_session_type():
-    session = bash_command(["./utils/get_session.sh"])
+    session = bash_command([f"{SETUP_DIR}/utils/get_session.sh"])
     return session
 
 
 def show_about():
     show_message(
-        message="<p>Gnome layout saver/loader app:</p>"
+        message="<p>Gnome extensions loader:</p>"
         "<p>Version: 1.0</p>"
-        "<p>Emrecan Altinsoy</p>"
-        "<p>emrecanaltinsoy@yahoo.com.tr</p>",
+        "<p>Emrecan Altinsoy</p>",
         title="About",
         style="information",
     )
@@ -347,10 +347,14 @@ def show_message(message=None, title=None, style=None):
     return msgBox.exec()
 
 
-if __name__ == "__main__":
+def main():
     os.makedirs(f"{LAYOUT_DIR}", exist_ok=True)
     os.makedirs(f"{LAYOUT_DIR}/extensions", exist_ok=True)
     app = QApplication(sys.argv)
     win = Window()
     win.show()
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
