@@ -6,5 +6,4 @@ Exec=gnome-extensions-loader
 Icon=/usr/share/gnome-extensions-loader/ui/icons/gnome-extensions-loader.png
 Terminal=false
 Type=Application
-StartupNotify=true
 Categories=GNOME;GTK;Utility;Extensions;
