@@ -88,6 +88,12 @@ class Window(QMainWindow, Ui_MainWindow):
                         title="Applied Changes",
                         style="information",
                     )
+                else:
+                    show_message(
+                        message="Extension configurations are loaded.",
+                        title="Done",
+                        style="information",
+                    )
                 if installation_success:
                     if re.search("wayland", self.session):
                         show_message(
@@ -112,15 +118,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if text:
                 if not os.path.isfile(f"{LAYOUT_DIR}/{str(text)}.conf"):
                     self.listWidget.addItem(str(text))
-                    bash_command(
-                        [f"{SETUP_DIR}/utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"]
-                    )
-                    self.config.read(f"{LAYOUT_DIR}/{str(text)}.conf")
-                    self.config.set(
-                        "/", "enabled-extensions", str(enabled_extensions())
-                    )
-                    with open(f"{LAYOUT_DIR}/{str(text)}.conf", "w") as configfile:
-                        self.config.write(configfile)
+                    self.write_conf(text)
                 else:
                     show_message(
                         message="Layout name exists!",
@@ -149,18 +147,19 @@ class Window(QMainWindow, Ui_MainWindow):
         )
         if answer == QMessageBox.Ok:
             for item in listItems:
-                bash_command(
-                    [
-                        f"{SETUP_DIR}/utils/dump_conf.sh",
-                        f"{item.text()}",
-                        f"{LAYOUT_DIR}",
-                    ]
-                )
+                self.write_conf(item.text())
                 show_message(
                     message="Layout overwritten successfully.",
                     title="Overwrite Layout",
                     style="information",
                 )
+
+    def write_conf(self, text):
+        bash_command([f"{SETUP_DIR}/utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
+        self.config.read(f"{LAYOUT_DIR}/{str(text)}.conf")
+        self.config.set("/", "enabled-extensions", str(enabled_extensions()))
+        with open(f"{LAYOUT_DIR}/{str(text)}.conf", "w") as configfile:
+            self.config.write(configfile)
 
     def install_missing_extensions(self, missing_extensions):
         installation_fail = set()
