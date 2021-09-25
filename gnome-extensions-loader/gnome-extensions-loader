@@ -18,8 +18,8 @@ from PyQt5.QtWidgets import (
 from ui.UI import Ui_MainWindow
 from utils.download_extension import download_extension
 
-LAYOUT_DIR = "/home/emrecan/.config/gnome-extensions-loader"
-SETUP_DIR="/usr/share/gnome-extensions-loader"
+LAYOUT_DIR = ".config/gnome-extensions-loader"
+SETUP_DIR = "/usr/share/gnome-extensions-loader"
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -71,7 +71,11 @@ class Window(QMainWindow, Ui_MainWindow):
                     installation_fail,
                 ) = self.install_missing_extensions(missing_extensions)
                 bash_command(
-                    [f"{SETUP_DIR}/utils/load_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
+                    [
+                        f"{SETUP_DIR}/utils/load_conf.sh",
+                        f"{item.text()}",
+                        f"{LAYOUT_DIR}",
+                    ]
                 )
 
                 post_installation_message = self.post_installation_message(
@@ -111,7 +115,9 @@ class Window(QMainWindow, Ui_MainWindow):
             if text:
                 if not os.path.isfile(f"{LAYOUT_DIR}/{str(text)}.conf"):
                     self.listWidget.addItem(str(text))
-                    bash_command([f"{SETUP_DIR}/utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"])
+                    bash_command(
+                        [f"{SETUP_DIR}/utils/dump_conf.sh", f"{text}", f"{LAYOUT_DIR}"]
+                    )
                 else:
                     show_message(
                         message="Layout name exists!",
@@ -141,7 +147,11 @@ class Window(QMainWindow, Ui_MainWindow):
         if answer == QMessageBox.Ok:
             for item in listItems:
                 bash_command(
-                    [f"{SETUP_DIR}/utils/dump_conf.sh", f"{item.text()}", f"{LAYOUT_DIR}"]
+                    [
+                        f"{SETUP_DIR}/utils/dump_conf.sh",
+                        f"{item.text()}",
+                        f"{LAYOUT_DIR}",
+                    ]
                 )
                 show_message(
                     message="Layout overwritten successfully.",
@@ -157,7 +167,11 @@ class Window(QMainWindow, Ui_MainWindow):
             check_download = download_extension(LAYOUT_DIR, uuid, self.shell_version)
             if check_download:
                 bash_command(
-                    [f"{SETUP_DIR}/utils/install_extension.sh", f"{uuid}", f"{LAYOUT_DIR}"]
+                    [
+                        f"{SETUP_DIR}/utils/install_extension.sh",
+                        f"{uuid}",
+                        f"{LAYOUT_DIR}",
+                    ]
                 )
                 installation_success.add(uuid)
             else:
