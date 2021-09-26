@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 from glob import glob
+from xml.dom import minidom
 
 from PyQt5.QtWidgets import (
     QApplication,
@@ -155,11 +156,33 @@ class Window(QMainWindow, Ui_MainWindow):
                 )
 
     def write_conf(self, text):
-        enabled = str(enabled_extensions())
-        disabled = str(disabled_extensions())
+        enabled = enabled_extensions()
+        disabled = disabled_extensions()
         self.config.read_string(bash_command("dconf dump /org/gnome/shell/".split()))
-        self.config.set("/", "enabled-extensions", enabled)
-        self.config.set("/", "disabled-extensions", disabled)
+        self.config.set("/", "enabled-extensions", str(enabled))
+        self.config.set("/", "disabled-extensions", str(disabled))
+
+        keys = set([k for k in self.config.keys()])
+        exts = ["/"]
+        for e in enabled:
+            xml_path = glob(
+                f"{get_home()}/.local/share/gnome-shell/extensions/{e}/schemas/*.xml"
+            )
+            if xml_path:
+                xml_file = minidom.parse(xml_path[0])
+                schema = xml_file.getElementsByTagName("schema")
+                try:
+                    new_section = "/".join(
+                        schema[0].attributes["path"].value.split("/")[5:-1]
+                    )
+                    exts.append(new_section)
+                except:
+                    print(e, "path does not exist in xml file")
+                    # print(path[0].attributes["id"].value)
+
+        for k in keys:
+            if k not in exts:
+                self.config.remove_section(k)
 
         with open(f"{LAYOUT_DIR}/{str(text)}.conf", "w") as configfile:
             self.config.write(configfile)
