@@ -7,7 +7,7 @@ import re
 import subprocess
 import sys
 from glob import glob
-from xml.dom import minidom
+import xml.etree.ElementTree as ET
 
 from PyQt5.QtWidgets import (
     QApplication,
@@ -162,6 +162,11 @@ class Window(QMainWindow, Ui_MainWindow):
         self.config.set("/", "enabled-extensions", str(enabled))
         self.config.set("/", "disabled-extensions", str(disabled))
 
+        opts = self.config.options("/")
+        for o in opts:
+            if o not in ["enabled-extensions", "disabled-extensions"]:
+                self.config.remove_option("/", o)
+
         keys = set([k for k in self.config.keys()])
         exts = ["/"]
         for e in enabled:
@@ -169,16 +174,18 @@ class Window(QMainWindow, Ui_MainWindow):
                 f"{get_home()}/.local/share/gnome-shell/extensions/{e}/schemas/*.xml"
             )
             if xml_path:
-                xml_file = minidom.parse(xml_path[0])
-                schema = xml_file.getElementsByTagName("schema")
-                try:
-                    new_section = "/".join(
-                        schema[0].attributes["path"].value.split("/")[5:-1]
-                    )
-                    exts.append(new_section)
-                except:
-                    print(e, "path does not exist in xml file")
-                    # print(path[0].attributes["id"].value)
+                root_node = ET.parse(xml_path[0]).getroot()
+                for s in root_node.findall("schema"):
+                    path = s.get("path")
+                    if path:
+                        sect = path.split("/")[5:-1]
+                        exts.append("/".join(sect))
+                    else:
+                        id = s.get("id")
+                        name = id.split(".")[4]
+                        for k in list(keys)[:]:
+                            if k.startswith(name):
+                                keys.discard(k)
 
         for k in keys:
             if k not in exts:
