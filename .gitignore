@@ -1,5 +1,5 @@
 .vscode
 __pycache__
-gnome-layout/ui/*.ui
 settings
+deb
 *.ui

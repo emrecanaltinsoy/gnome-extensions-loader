@@ -9,6 +9,7 @@ Config files and the downloaded extensions are stored in ~/.config/gnome-extensi
 ![](./assets/UI.png)
 
 ## Installation
+### Build from the source
 To install the app run the following commands in your terminal.
 ```
 git clone https://github.com/emrecanaltinsoy/gnome-extensions-loader.git
@@ -20,9 +21,19 @@ To uninstall the app run the following command in your terminal.
 ```
 sudo make uninstall
 ```
+### Install using deb package
+After downloading the deb package go to the directory where it is located and run the following command.
+```
+sudo dpkg -i gnome-extensions-loader_1.0_amd64.deb
+```
 
 ## Launch the app
 To launch the app either run the following command on your terminal or run the application directly.
 ```
 gnome-shell-extensions
 ```
+
+## Features
+- [x] Extension settings
+- [ ] Keybindings
+- [ ] Tweaks
